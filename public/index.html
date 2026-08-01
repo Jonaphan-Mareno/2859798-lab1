@@ -51,14 +51,17 @@
 <body>
   
     <h1>To do list</h1>  
-    <button id="myButton">  Add a Task  </button>
-    <div id="lol">You have nothing lil bro UI.</div>
+    <input id="taskTitle"> Title</input>
+    <input id="taskDesc"> Description</input>
+    <input id="taskTopic"> Topic</input>
+    <input id="taskDue"> DueDate</input>
+    <button id="myButton">  Add a Task  </button> 
+    <div id="lol" class="card-container">You have nothing lil bro UI.</div>
     <script>
         const button = document.getElementById('myButton');
+        const button2 = document.getElementById('myButton2');
         const resultText = document.getElementById('lol');
-
-        button.addEventListener('click', async () => {
-   
+        async function loadTasks() {
             const response  = await fetch('/api/tasks');
   
             const tasks = await response.json();
@@ -74,8 +77,37 @@
                         <p><strong>Due:</strong> ${task.Due_date || 'No date set'}</p>
                     </div>
                 `;
-            });
+                });}
+        button.addEventListener('click', async () => {
+            const newTitle = document.getElementById('taskTitle').value;
+            const newDesc = document.getElementById('taskDesc').value;
+            const newTopic = document.getElementById('taskTopic').value;
+            const newDue = document.getElementById('taskTopic').value;
+            const newTask = {
+        title: newTitle,
+        Description: newDesc,
+        Due_date: newDue||"TBA", 
+        Topic: newTopic,
+        status: "To Do"
+    };
+    await fetch('/api/addtasks', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newTask)
+        
+    });
+    document.getElementById('taskTitle').value = "";
+    document.getElementById('taskDesc').value = "";
+    document.getElementById('taskTopic').value = "";
+    document.getElementById('taskDue').value = "";
+    loadTasks();
+
         });
+            
+                loadTasks();
+      
     </script>
 </body>
 </html>
