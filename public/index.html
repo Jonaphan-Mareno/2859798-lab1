@@ -46,6 +46,21 @@
             display: inline-block;
             margin-bottom: 10px;
         }
+         .status-badge {
+            background-color: #00ff33;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        input[type="text"] {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 200px;
+}
     </style>
 </head>
 <body>
@@ -56,6 +71,14 @@
     <input id="taskTopic"> Topic</input>
     <input id="taskDue"> DueDate</input>
     <button id="myButton">  Add a Task  </button> 
+  
+<label for="sortDropdown">Sort by: </label>
+<select id="sortDropdown">
+    
+    <option value="topic">Topic</option>
+    <option value="status">Status</option>
+    <option value="duedate">Due Date</option>
+</select>
     <div id="lol" class="card-container">You have nothing lil bro UI.</div>
     <script>
         const button = document.getElementById('myButton');
@@ -64,14 +87,22 @@
         async function loadTasks() {
             const response  = await fetch('/api/tasks');
   
-            const tasks = await response.json();
+            let tasks = await response.json();
+            const sortBy = document.getElementById('sortDropdown').value;
+
+    tasks.sort((a, b) => {
+        let valueA = a[sortBy] || ""; 
+        let valueB = b[sortBy] || "";
+        if (valueA < valueB) return -1;
+        if (valueA > valueB) return 1;
+        return 0;
+    });
          
             resultText.innerHTML = "";
             tasks.forEach(task => {
-                // 3. Create a bullet point for each task, pulling out the specific columns we want
                 resultText.innerHTML += `
                     <div class="card">
-                        <span class="topic-badge">${task.Topic || 'No Topic'}</span> <span class="topic-badge">${task.status}</span> 
+                        <span class="topic-badge">${task.Topic || 'No Topic'}</span> <span class="status-badge">${task.status}</span> 
                         <h3>${task.title}</h3>
                         <p>${task.Description || 'No description provided'}</p>
                         <p><strong>Due:</strong> ${task.Due_date || 'No date set'}</p>
@@ -105,9 +136,14 @@
     loadTasks();
 
         });
+        const sortDropdown = document.getElementById('sortDropdown');
+sortDropdown.addEventListener('change', () => {
+    loadTasks();
+    
+});
             
                 loadTasks();
       
-    </script>
+    </script>`
 </body>
 </html>
