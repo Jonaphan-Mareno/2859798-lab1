@@ -1,44 +1,55 @@
 const express = require('express');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
-const app = express();app.use(express.json());
+const app = express();
 const port = 3000;
-const db = new sqlite3.Database('./my-database.db');
-db.serialize(() => {
-  // Create a table for users
-  db.run("CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, title TEXT, Description TEXT,Due_date TEXT,Topic TEXT,status TEXT)");
-  // Clear old data and insert a couple of names for testing
-  db.run("DELETE FROM tasks");
-db.run("INSERT INTO tasks (title, Description, Due_date, Topic,status) VALUES ('Buy groceries', 'Get milk and eggs', 'Today', 'Errands','Todo')");
-  db.run("INSERT INTO tasks (title, Topic,status) VALUES ('Finish coding project', 'Work','Todo')");
-});
+app.use(express.json());
+
 app.use(express.static(path.join(__dirname, 'public')));
+const db = new sqlite3.Database('./my-database.db');
 
+db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY, 
+        title TEXT, 
+        Description TEXT, 
+        Due_date TEXT, 
+        Topic TEXT, 
+        status TEXT,
+        is_archived INTEGER DEFAULT 0
+    )`);
+});
 app.get('/api/tasks', (req, res) => {
-  // Fetch all rows from the users table
-  db.all("SELECT * FROM tasks", [], (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-
-    // Send the database rows back to the frontend
-    res.json(rows);
-  });
-});
-app.post('/api/addtasks',(req, res)=>{
-    const { title, Description, Due_date, Topic, status } = req.body;
- const query = "INSERT INTO tasks (title, Description, Due_date, Topic, status) VALUES (?, ?, ?, ?, ?)";
-       db.run(query, [title, Description, Due_date, Topic, status], function(err) {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        // 3. Send a success message back so the browser knows it finished
-        res.json({ message: "Task added successfully!", id: this.lastID });
-    }); 
+    db.all("SELECT * FROM tasks", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
     });
-
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port} in your browser lil bro.`);
 });
+app.post('/api/addtasks', (req, res) => {
+    const { title, Description, Due_date, Topic, status } = req.body;
+    const query = "INSERT INTO tasks (title, Description, Due_date, Topic, status, is_archived) VALUES (?, ?, ?, ?, ?, 0)";
+    
+    db.run(query, [title, Description, Due_date, Topic, status], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: "Task added successfully!", id: this.lastID });
+    });
+});
+app.put('/api/edittask/:id', (req, res) => {
+    const taskId = req.params.id;
+    const { title, Description, Due_date, Topic, status, is_archived } = req.body;
+    
+    const query = "UPDATE tasks SET title = ?, Description = ?, Due_date = ?, Topic = ?, status = ?, is_archived = ? WHERE id = ?";
+    
+    db.run(query, [title, Description, Due_date, Topic, status, is_archived, taskId], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: "Task updated successfully!" });
+    });
+});
+
+module.exports = { app, db };
+
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(port, () => {
+        console.log(`Server is running at http://localhost:${port}`);
+    });
+}
